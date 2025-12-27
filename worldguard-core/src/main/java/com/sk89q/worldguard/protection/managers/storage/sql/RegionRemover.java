@@ -37,6 +37,7 @@ class RegionRemover {
     private final int worldId;
     private final List<String> regionQueue = new ArrayList<>();
     private final List<String> cuboidGeometryQueue = new ArrayList<>();
+    private final List<String> cylinderGeometryQueue = new ArrayList<>();
     private final List<String> polygonGeometryQueue = new ArrayList<>();
 
     RegionRemover(DataUpdater updater) {
@@ -53,6 +54,8 @@ class RegionRemover {
         if (currentType.equals("cuboid")) {
             cuboidGeometryQueue.add(region.getId());
         } else if (currentType.equals("poly2d")) {
+            cylinderGeometryQueue.add(region.getId());
+        } else if (currentType.equals("cylinder")) {
             polygonGeometryQueue.add(region.getId());
         } else if (currentType.equals("global")) {
             // Nothing to do
@@ -83,6 +86,7 @@ class RegionRemover {
     public void apply() throws SQLException {
         removeRows(regionQueue, "region", "id");
         removeRows(cuboidGeometryQueue, "region_cuboid", "region_id");
+        removeRows(cylinderGeometryQueue, "region_cylinder", "region_id");
         removeRows(polygonGeometryQueue, "region_poly2d", "region_id");
     }
 }

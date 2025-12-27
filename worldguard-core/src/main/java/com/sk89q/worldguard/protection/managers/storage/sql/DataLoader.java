@@ -27,13 +27,11 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Table;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector2;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.flags.registry.FlagRegistry;
 import com.sk89q.worldguard.protection.managers.storage.RegionDatabaseUtils;
-import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.*;
 import com.sk89q.worldguard.util.io.Closer;
 import com.sk89q.worldguard.util.sql.DataSourceConfig;
 import org.yaml.snakeyaml.Yaml;
@@ -77,6 +75,7 @@ class DataLoader {
 
     public Set<ProtectedRegion> load() throws SQLException {
         loadCuboids();
+        loadCylinders();
         loadPolygons();
         loadGlobals();
 
@@ -112,6 +111,44 @@ class DataLoader {
                 BlockVector3 min = pt1.getMinimum(pt2);
                 BlockVector3 max = pt1.getMaximum(pt2);
                 ProtectedRegion region = new ProtectedCuboidRegion(rs.getString("id"), min, max);
+
+                region.setPriority(rs.getInt("priority"));
+
+                loaded.put(rs.getString("id"), region);
+
+                String parentId = rs.getString("parent");
+                if (parentId != null) {
+                    parentSets.put(region, parentId);
+                }
+            }
+        } finally {
+            closer.closeQuietly();
+        }
+    }
+
+    private void loadCylinders() throws SQLException {
+        Closer closer = Closer.create();
+        try {
+            PreparedStatement stmt = closer.register(conn.prepareStatement(
+                    "SELECT g.min_y, g.max_y, " +
+                            "       g.center_x, g.center_z, " +
+                            "       g.radius_x, g.radius_z, " +
+                            "       r.id, r.priority, p.id AS parent " +
+                            "FROM " + config.getTablePrefix() + "region_cylinder AS g " +
+                            "LEFT JOIN " + config.getTablePrefix() + "region AS r " +
+                            "          ON (g.region_id = r.id AND g.world_id = r.world_id) " +
+                            "LEFT JOIN " + config.getTablePrefix() + "region AS p " +
+                            "          ON (r.parent = p.id AND r.world_id = p.world_id) " +
+                            "WHERE r.world_id = " + worldId));
+
+            ResultSet rs = closer.register(stmt.executeQuery());
+
+            while (rs.next()) {
+                Vector2 center = Vector2.at(rs.getInt("center_x"), rs.getInt("center_z"));
+                Vector2 radius = Vector2.at(rs.getInt("radius_x"), rs.getInt("radius_z"));
+                ProtectedRegion region = new ProtectedCylinderRegion(rs.getString("id"),
+                        rs.getInt("min_y"), rs.getInt("max_y"),
+                        center, radius);
 
                 region.setPriority(rs.getInt("priority"));
 

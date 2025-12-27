@@ -26,6 +26,7 @@ import com.sk89q.util.yaml.YAMLNode;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector2;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.flags.FlagUtil;
@@ -35,10 +36,7 @@ import com.sk89q.worldguard.protection.managers.storage.DifferenceSaveException;
 import com.sk89q.worldguard.protection.managers.storage.RegionDatabase;
 import com.sk89q.worldguard.protection.managers.storage.RegionDatabaseUtils;
 import com.sk89q.worldguard.protection.managers.storage.StorageException;
-import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.*;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -156,6 +154,12 @@ public class YamlRegionFile implements RegionDatabase {
                     Integer maxY = checkNotNull(node.getInt("max-y"));
                     List<BlockVector2> points = node.getBlockVector2List("points", null);
                     region = new ProtectedPolygonalRegion(id, points, minY, maxY);
+                } else if (type.equals("cylinder")) {
+                    Integer minY = checkNotNull(node.getInt("min-y"));
+                    Integer maxY = checkNotNull(node.getInt("max-y"));
+                    Vector2 radius = checkNotNull(node.getVector2("radius"));
+                    Vector2 center = checkNotNull(node.getVector2("center"));
+                    region = new ProtectedCylinderRegion(id, minY, maxY, radius, center);
                 } else if (type.equals("global")) {
                     region = new GlobalProtectedRegion(id);
                 } else {
@@ -227,6 +231,13 @@ public class YamlRegionFile implements RegionDatabase {
                 }
 
                 node.setProperty("points", points);
+            } else if (region instanceof ProtectedCylinderRegion) {
+                ProtectedCylinderRegion poly = (ProtectedCylinderRegion) region;
+                node.setProperty("type", "cylinder");
+                node.setProperty("min-y", poly.getMinimumPoint().y());
+                node.setProperty("max-y", poly.getMaximumPoint().y());
+                node.setProperty("radius", poly.getRadius());
+                node.setProperty("center", poly.getCenter());
             } else if (region instanceof GlobalProtectedRegion) {
                 node.setProperty("type", "global");
             } else {

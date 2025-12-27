@@ -26,6 +26,7 @@ public enum RegionType {
 
     // Do not change the names
     CUBOID("cuboid"),
+    CYLINDER("cylinder"),
     POLYGON("poly2d"),
     GLOBAL("global");
 

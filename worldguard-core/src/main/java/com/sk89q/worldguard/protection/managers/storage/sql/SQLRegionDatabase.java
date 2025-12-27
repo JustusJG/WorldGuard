@@ -24,10 +24,7 @@ import com.sk89q.worldguard.protection.managers.RegionDifference;
 import com.sk89q.worldguard.protection.managers.storage.DifferenceSaveException;
 import com.sk89q.worldguard.protection.managers.storage.RegionDatabase;
 import com.sk89q.worldguard.protection.managers.storage.StorageException;
-import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.*;
 import com.sk89q.worldguard.util.io.Closer;
 import com.sk89q.worldguard.util.sql.DataSourceConfig;
 import org.yaml.snakeyaml.DumperOptions;
@@ -176,6 +173,8 @@ class SQLRegionDatabase implements RegionDatabase {
             return "cuboid";
         } else if (region instanceof ProtectedPolygonalRegion) {
             return "poly2d"; // Differs from getTypeName() on ProtectedRegion
+        } else if (region instanceof ProtectedCylinderRegion) {
+            return "cylinder"; // What? Why? Why not use ProtectedRegion.getType().getName()? Why use an If statement?
         } else if (region instanceof GlobalProtectedRegion) {
             return "global";
         } else {

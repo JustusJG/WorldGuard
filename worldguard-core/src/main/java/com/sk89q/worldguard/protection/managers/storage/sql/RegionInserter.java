@@ -22,10 +22,7 @@ package com.sk89q.worldguard.protection.managers.storage.sql;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldguard.protection.regions.GlobalProtectedRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedCuboidRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedPolygonalRegion;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
+import com.sk89q.worldguard.protection.regions.*;
 import com.sk89q.worldguard.util.io.Closer;
 import com.sk89q.worldguard.util.sql.DataSourceConfig;
 
@@ -45,6 +42,7 @@ class RegionInserter {
     private final int worldId;
     private final List<ProtectedRegion> all = new ArrayList<>();
     private final List<ProtectedCuboidRegion> cuboids = new ArrayList<>();
+    private final List<ProtectedCylinderRegion> cylinders = new ArrayList<>();
     private final List<ProtectedPolygonalRegion> polygons = new ArrayList<>();
 
     RegionInserter(DataUpdater updater) {
@@ -64,6 +62,9 @@ class RegionInserter {
 
         } else if (region instanceof ProtectedPolygonalRegion) {
             polygons.add((ProtectedPolygonalRegion) region);
+
+        } else if (region instanceof ProtectedCylinderRegion) {
+            cylinders.add((ProtectedCylinderRegion) region);
 
         } else if (region instanceof GlobalProtectedRegion) {
             // Nothing special to do about them
@@ -129,6 +130,34 @@ class RegionInserter {
         }
     }
 
+    private void insertCylinders() throws SQLException {
+        Closer closer = Closer.create();
+        try {
+            PreparedStatement stmt = closer.register(conn.prepareStatement(
+                    "INSERT INTO " + config.getTablePrefix() + "region_cylinder " +
+                            "(region_id, world_id, min_y, max_y, center_x, center_z, radius_x, radius_z) " +
+                            "VALUES " +
+                            "(?, " + worldId + ", ?, ?, ?, ?, ?, ?)"));
+
+            for (List<ProtectedCylinderRegion> partition : Lists.partition(cylinders, StatementBatch.MAX_BATCH_SIZE)) {
+                for (ProtectedCylinderRegion region : partition) {
+                    stmt.setString(1, region.getId());
+                    stmt.setInt(2, region.getMinimumPoint().y());
+                    stmt.setInt(3, region.getMaximumPoint().y());
+                    stmt.setInt(4, region.getCenter().blockX());
+                    stmt.setInt(5, region.getCenter().blockZ());
+                    stmt.setInt(6, region.getRadius().blockX());
+                    stmt.setInt(7, region.getRadius().blockZ());
+                    stmt.addBatch();
+                }
+
+                stmt.executeBatch();
+            }
+        } finally {
+            closer.closeQuietly();
+        }
+    }
+
     private void insertPolygons() throws SQLException {
         Closer closer = Closer.create();
         try {
@@ -182,6 +211,7 @@ class RegionInserter {
     public void apply() throws SQLException {
         insertRegionTypes();
         insertCuboids();
+        insertCylinders();
         insertPolygons();
         insertPolygonVertices();
     }
