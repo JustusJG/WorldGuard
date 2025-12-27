@@ -19,6 +19,7 @@
 
 package com.sk89q.worldguard.protection.util;
 
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.*;
 import com.sk89q.worldedit.regions.selector.CuboidRegionSelector;
 import com.sk89q.worldedit.regions.selector.CylinderRegionSelector;
@@ -50,6 +51,13 @@ public final class WorldEditRegionConverter {
         if (region instanceof ProtectedPolygonalRegion) {
             return new Polygonal2DRegion(null, region.getPoints(),
                     region.getMinimumPoint().y(), region.getMaximumPoint().y());
+        }
+        if (region instanceof ProtectedCylinderRegion cylinderRegion) {
+            int minY = cylinderRegion.getMinimumPoint().y();
+            BlockVector3 center3 = cylinderRegion.getCenter().toVector3(minY).toBlockPoint();
+            return new CylinderRegion(
+                    center3, cylinderRegion.getRadius(),
+                    minY, cylinderRegion.getMaximumPoint().y());
         }
         return null;
     }
