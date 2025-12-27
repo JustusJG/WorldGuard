@@ -658,8 +658,15 @@ public class WorldGuardEntityListener extends AbstractListener {
                 return;
             }
 
-            Set<com.sk89q.worldedit.world.entity.EntityType> entityTypes = set.queryValue(null, Flags.DENY_SPAWN);
-            if (entityTypes != null && weEntityType != null && entityTypes.contains(weEntityType)) {
+            Set<com.sk89q.worldedit.world.entity.EntityType> deniedEntityTypes = set.queryValue(null, Flags.DENY_SPAWN);
+            if (deniedEntityTypes != null && weEntityType != null && deniedEntityTypes.contains(weEntityType)) {
+                event.setCancelled(true);
+                return;
+            }
+
+
+            Set<com.sk89q.worldedit.world.entity.EntityType> allowedEntityTypes = set.queryValue(null, Flags.ALLOW_SPAWN);
+            if (allowedEntityTypes != null && weEntityType != null && !allowedEntityTypes.contains(weEntityType)) {
                 event.setCancelled(true);
                 return;
             }

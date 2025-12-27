@@ -104,6 +104,7 @@ public final class Flags {
 
     // mob spawning related
     public static final StateFlag MOB_SPAWNING = register(new StateFlag("mob-spawning", true));
+    public static final SetFlag<EntityType> ALLOW_SPAWN = register(new SetFlag<>("allow-spawn", new RegistryFlag<>(null, EntityType.REGISTRY)));
     public static final SetFlag<EntityType> DENY_SPAWN = register(new SetFlag<>("deny-spawn", new RegistryFlag<>(null, EntityType.REGISTRY)));
 
     // block dynamics
